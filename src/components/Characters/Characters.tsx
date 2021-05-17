@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useCallback, useReducer } from 'react';
+import React, { useEffect, useState, useReducer } from 'react';
+import generalService from 'api/general/generalService';
+import { useAsync } from 'components/Hooks/useAsync';
 
 type CharacterData = {
     id: number
@@ -39,18 +41,8 @@ export const Characters = () => {
     const [info, setInfo] = useState<InfoData>()
     const [items, dispatch] = useReducer(favouriteReducer, initialState)
 
-    //Fetching using async-await
-    const fetchCharacters = useCallback(async () => {
-        const response = await window.fetch('https://rickandmortyapi.com/api/character')
-        const { results, info }: JSONResponse = await response.json()
-        if (response.ok) {
-            setCharacters(results)
-            setInfo(info)
-        } else {
-            const error = new Error('Server error')
-            return Promise.reject(error)
-        }
-    }, [])
+    //Fetching using axios
+    const { execute, status, value } = useAsync(generalService.getCharacters)
 
     // Handlers
 
@@ -62,8 +54,21 @@ export const Characters = () => {
     }
 
     useEffect(() => {
+        //Fetching using async-await
+        const fetchCharacters = async () => {
+            const response = await window.fetch('https://rickandmortyapi.com/api/character')
+            const { results, info }: JSONResponse = await response.json()
+            if (response.ok) {
+                setCharacters(results)
+                setInfo(info)
+            } else {
+                const error = new Error('Server error')
+                return Promise.reject(error)
+            }
+        }
         fetchCharacters()
-    }, [fetchCharacters])
+        execute()
+    }, [execute])
 
     return (
         <div>
@@ -73,6 +78,7 @@ export const Characters = () => {
                 </li>
             ))}
             <h3>{info?.count}</h3>
+            {console.log('🇪🇨',status, value)}
             {!characters?.length ? 'Loading...' :
                 characters.map((character: CharacterData) => (
                     <div key={character.id} >
