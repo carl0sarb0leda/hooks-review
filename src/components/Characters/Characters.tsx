@@ -20,13 +20,17 @@ type CharacterData = {
 //     info?: InfoData
 // }
 
-const initialState = {
-    favourites: []
+type Action = {
+    type: 'ADD_FAVOURITE'
+    payload: CharacterData
+}
+type State = {
+    favourites: Array<CharacterData>
 }
 
-const favouriteReducer = (state: any, action: any) => {
+const favouriteReducer = (state: State, action: Action) => {
     switch (action.type) {
-        case 'ADD_TO_FAVOURITE':
+        case 'ADD_FAVOURITE':
             return {
                 ...state,
                 favourites: [...state.favourites, action.payload]
@@ -39,7 +43,9 @@ const favouriteReducer = (state: any, action: any) => {
 export const Characters = () => {
     // const [characters, setCharacters] = useState<Array<CharacterData>>([])
     // const [info, setInfo] = useState<InfoData>()
-    const [items, dispatch] = useReducer(favouriteReducer, initialState)
+    const [items, dispatch] = useReducer(favouriteReducer, {
+        favourites: []
+    })
 
     //Fetching using axios
     const getCharacters = useAsyncFetch(generalService.getCharacters)
@@ -48,7 +54,7 @@ export const Characters = () => {
 
     const handleOnClick = (favourite: CharacterData) => {
         dispatch({
-            type: 'ADD_TO_FAVOURITE',
+            type: 'ADD_FAVOURITE',
             payload: favourite
         })
     }
@@ -80,7 +86,7 @@ export const Characters = () => {
         if (getCharacters.isResolved) {
             return (
                 <>
-                    <h3>{getCharacters.value.info.count}🤓</h3>
+                    <h3>{getCharacters.value.info.count}🦖</h3>
                     {getCharacters.value.results.map((character: CharacterData) => (
                         <div key={character.id} >
                             <h2>

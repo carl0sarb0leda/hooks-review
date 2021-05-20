@@ -1,18 +1,17 @@
-import { useCallback, useEffect, useReducer } from 'react';
+import { useEffect, useReducer } from 'react';
 import { AsyncStatus } from 'types/general';
 import { apiErrorHandler } from 'utils/apiErrors';
 
-type Action = { type: 'started' } |
-{ type: 'resolved', value: any } |
-{ type: 'rejected', error: string }
+type Action =
+    { type: 'started' } |
+    { type: 'resolved', value: any } |
+    { type: 'rejected', error: string }
 
 type State = {
     status: AsyncStatus,
     value: any,
     error: string | null,
-    msg: string | null,
 }
-
 
 export const useAsyncFetch = (
     asyncFunction: (params: any) => Promise<any>,
@@ -39,9 +38,8 @@ export const useAsyncFetch = (
                     error: action.error
                 }
             }
-
             default: {
-                throw new Error(`Unhandled action type:`)
+                throw new Error(`Unhandled action type: ${action}`)
             }
         }
     }
@@ -49,58 +47,48 @@ export const useAsyncFetch = (
         status: 'idle',
         value: null,
         error: null,
-        msg: null,
     })
 
-    const execute = useCallback(async (params?: any) => {
-        dispatch({ type: 'started' })
-        return asyncFunction(params)
-            .then((response: any) => {
-                if (response.status === 200) {
-                    dispatch({
-                        type: 'resolved',
-                        value: response.data
-                    })
-                    // if (response.data.result) {
-                    //     setValue(response.data.result)
-                    // } else setValue(response.data)
-                }
-                // else if (response.status === 201) {
-                //         setValue(response.headers['location'])
-                //     }
-                // if (response.data.messages) {
-                //     setMsg(response.data.messages[0])
-                // }
-                // setStatus('success')
-                return {
-                    success: true,
-                    error: null,
-                    location: response.headers.location || null,
-                    data: response.data.result || null,
-                    rootResponse: response,
-                }
-            })
-            .catch((error: any) => {
-                dispatch({
-                    type: 'rejected',
-                    error: apiErrorHandler(error),
+    useEffect(() => {
+        const execute = async (params?: any) => {
+            dispatch({ type: 'started' })
+            return asyncFunction(params)
+                .then((response: any) => {
+                    console.log(`🦊`, response);
+                    if (response.status === 200) {
+                        dispatch({
+                            type: 'resolved',
+                            value: response.data
+                        })
+                    }
+                    return {
+                        success: true,
+                        error: null,
+                        location: response.headers.location || null,
+                        data: response.data.result || null,
+                        rootResponse: response,
+                    }
                 })
-                return {
-                    success: false,
-                    error: apiErrorHandler(error),
-                    location: null,
-                    data: null,
-                    rootResponse: null
-                }
-            })
+                .catch((error: any) => {
+                    dispatch({
+                        type: 'rejected',
+                        error: apiErrorHandler(error),
+                    })
+                    return {
+                        success: false,
+                        error: apiErrorHandler(error),
+                        location: null,
+                        data: null,
+                        rootResponse: null
+                    }
+                })
+        }
+        execute()
     }, [asyncFunction])
 
-    useEffect(()=>{
-        execute()
-    },[execute])
-    
     const isLoading = state.status === 'idle' || state.status === 'pending'
     const isResolved = state.status === 'success'
     const isRejected = state.status === 'error'
-    return { execute, isLoading, isResolved, isRejected, ...state }
+
+    return { isLoading, isResolved, isRejected, ...state }
 }
