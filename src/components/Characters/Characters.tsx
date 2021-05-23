@@ -1,32 +1,9 @@
-import React, { useReducer } from 'react';
+import React, { useReducer, useState, useMemo } from 'react';
 import generalService from 'api/general/generalService';
 import { useAsyncFetch } from 'components/Hooks/useAsyncFetch';
+import { Search } from 'components';
+import { State, Action, CharacterData } from 'types/components';
 
-type CharacterData = {
-    id: number
-    name: string
-    status: string
-}
-
-// type InfoData = {
-//     count: number
-//     next: string
-//     pages: number
-//     prev: string
-// }
-
-// type JSONResponse = {
-//     results: Array<CharacterData>
-//     info?: InfoData
-// }
-
-type Action = {
-    type: 'ADD_FAVOURITE'
-    payload: CharacterData
-}
-type State = {
-    favourites: Array<CharacterData>
-}
 
 const favouriteReducer = (state: State, action: Action) => {
     switch (action.type) {
@@ -43,15 +20,30 @@ const favouriteReducer = (state: State, action: Action) => {
 export const Characters = () => {
     // const [characters, setCharacters] = useState<Array<CharacterData>>([])
     // const [info, setInfo] = useState<InfoData>()
+
     const [items, dispatch] = useReducer(favouriteReducer, {
         favourites: []
     })
+    const [search, setSearch] = useState<string>('')
 
     //Fetching using axios
-    const getCharacters = useAsyncFetch(generalService.getCharacters)
+    const {
+        error: getCharactersError,
+        value: getCharactersValue,
+        ...getCharacters
+    } = useAsyncFetch(generalService.getCharacters)
+
+    //Functions
+    const filteredValues = useMemo(() => {
+        let filteredCharacters = getCharactersValue?.results.filter(
+            (character: CharacterData) => {
+                return character.name.toLowerCase().includes(search.toLowerCase())
+            }
+        )
+        return filteredCharacters
+    }, [getCharactersValue, search])
 
     // Handlers
-
     const handleOnClick = (favourite: CharacterData) => {
         dispatch({
             type: 'ADD_FAVOURITE',
@@ -81,13 +73,13 @@ export const Characters = () => {
             return <div>'Loading...'</div>
         }
         if (getCharacters.isRejected) {
-            return <pre>{getCharacters.error}</pre>
+            return <pre>{getCharactersError}</pre>
         }
         if (getCharacters.isResolved) {
             return (
                 <>
-                    <h3>{getCharacters.value.info.count}🦖</h3>
-                    {getCharacters.value.results.map((character: CharacterData) => (
+                    <h3>{getCharactersValue.info.count}🦖</h3>
+                    {filteredValues.map((character: CharacterData) => (
                         <div key={character.id} >
                             <h2>
                                 {`${character.name}-${character.status}`}
@@ -109,6 +101,7 @@ export const Characters = () => {
                     {favourite.name}
                 </li>
             ))}
+            <Search setSearch={setSearch} />
             <Characters />
             {/* {!characters?.length ? 'Loading...' :
                 characters.map((character: CharacterData) => (
